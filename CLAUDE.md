@@ -26,3 +26,7 @@ This is a basic Rust project with:
 
 - `Cargo.toml` - Project configuration and dependencies
 - `src/main.rs` - Main application entry point
+
+## Writing Guidelines
+
+- Always use latex when writing mathematical symbols in markdown documents except for inside code blocks
