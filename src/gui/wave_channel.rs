@@ -42,6 +42,13 @@ impl WaveChannelApp {
         }
     }
 
+    fn info_button(ui: &mut egui::Ui, tooltip_text: &str) {
+        ui.add_space(5.0);
+        if ui.small_button("?").on_hover_text(tooltip_text).clicked() {
+            // Button click handled by hover tooltip
+        }
+    }
+
     fn generate_plot_data(&self) -> (PlotPoints, PlotPoints, PlotPoints) {
         let x_positions: Vec<f64> = (0..self.grid_resolution)
             .map(|i| i as f64 * self.grid_spacing())
@@ -87,6 +94,7 @@ impl WaveChannelApp {
                 // Channel length control
                 ui.horizontal(|ui| {
                     ui.label("Channel Length:");
+                    Self::info_button(ui, "The total length of the wave channel domain. Longer channels allow waves to develop fully and reduce boundary effects. Typical values: 50-200m for coastal studies.");
                     ui.add(
                         egui::Slider::new(&mut self.channel_length, 1.0..=200.0)
                             .suffix(" m")
@@ -97,6 +105,7 @@ impl WaveChannelApp {
                 // Grid resolution control
                 ui.horizontal(|ui| {
                     ui.label("Grid Resolution:");
+                    Self::info_button(ui, "Number of computational grid points along the channel. Higher resolution gives better accuracy but increases computation time. Rule of thumb: 20-50 points per wavelength for good accuracy.");
                     ui.add(
                         egui::Slider::new(&mut self.grid_resolution, 10..=2000).suffix(" points"),
                     );
@@ -105,6 +114,7 @@ impl WaveChannelApp {
                 // Still water level control
                 ui.horizontal(|ui| {
                     ui.label("Still Water Level:");
+                    Self::info_button(ui, "Mean water depth (h) in the channel. Controls wave speed and breaking characteristics. Shallow water: h < L/20, Deep water: h > L/2, where L is wavelength. Typical coastal depths: 0.5-5m.");
                     ui.add(
                         egui::Slider::new(&mut self.still_water_level, 0.1..=5.0)
                             .suffix(" m")
@@ -125,6 +135,7 @@ impl WaveChannelApp {
                 // Wave height control
                 ui.horizontal(|ui| {
                     ui.label("Wave Height (H):");
+                    Self::info_button(ui, "Vertical distance from wave trough to wave crest. Determines wave energy (E ∝ H²). For linear waves, amplitude a = H/2. Breaking occurs when H/h ≈ 0.78 (depth-limited breaking).");
                     ui.add(
                         egui::Slider::new(&mut self.wave_height, 0.01..=5.0)
                             .suffix(" m")
@@ -135,6 +146,7 @@ impl WaveChannelApp {
                 // Wave period control
                 ui.horizontal(|ui| {
                     ui.label("Wave Period (T):");
+                    Self::info_button(ui, "Time interval between successive wave crests passing a fixed point. Related to frequency by f = 1/T. Determines wavelength through dispersion relation. Typical ocean waves: T = 4-20s, wind waves: T = 1-8s.");
                     ui.add(
                         egui::Slider::new(&mut self.wave_period, 0.1..=20.0)
                             .suffix(" s")
@@ -145,6 +157,7 @@ impl WaveChannelApp {
                 // Number of waves control
                 ui.horizontal(|ui| {
                     ui.label("Number of Waves:");
+                    Self::info_button(ui, "Total number of wave cycles to simulate. Determines simulation duration: t_sim = N × T. More waves show steady-state behavior and wave interactions. Typical studies use 10-50 waves for analysis.");
                     ui.add(egui::Slider::new(&mut self.number_of_waves, 1..=1000).suffix(" waves"));
                 });
 
@@ -154,7 +167,10 @@ impl WaveChannelApp {
                 ui.heading("Computed Values");
 
                 // Grid spacing
-                ui.label(format!("Grid Spacing (Δx): {:.3} m", self.grid_spacing()));
+                ui.horizontal(|ui| {
+                    ui.label(format!("Grid Spacing (Δx): {:.3} m", self.grid_spacing()));
+                    Self::info_button(ui, "Distance between computational grid points. Formula: Δx = L/(N-1) where L is channel length and N is grid resolution. Smaller spacing improves accuracy but increases computational cost.");
+                });
 
                 // Wave properties
                 let wave_frequency = 1.0 / self.wave_period;
@@ -162,19 +178,31 @@ impl WaveChannelApp {
                 let shallow_water_celerity = (9.81 * self.still_water_level).sqrt(); // c = √(gh)
                 let shallow_water_wavelength = shallow_water_celerity * self.wave_period;
 
-                ui.label(format!("Wave Frequency (f): {:.3} Hz", wave_frequency));
-                ui.label(format!(
-                    "Angular Frequency (ω): {:.3} rad/s",
-                    angular_frequency
-                ));
-                ui.label(format!(
-                    "Shallow Water Celerity (c): {:.3} m/s",
-                    shallow_water_celerity
-                ));
-                ui.label(format!(
-                    "Shallow Water Wavelength (L): {:.3} m",
-                    shallow_water_wavelength
-                ));
+                ui.horizontal(|ui| {
+                    ui.label(format!("Wave Frequency (f): {:.3} Hz", wave_frequency));
+                    Self::info_button(ui, "Number of wave cycles per second. Formula: f = 1/T where T is wave period. Fundamental parameter in wave kinematics and energy calculations. Units: Hertz (Hz) or cycles per second.");
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "Angular Frequency (ω): {:.3} rad/s",
+                        angular_frequency
+                    ));
+                    Self::info_button(ui, "Angular frequency in radians per second. Formula: ω = 2πf = 2π/T. Used in wave equations and dispersion relations. Relates linear frequency to circular motion representation.");
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "Shallow Water Celerity (c): {:.3} m/s",
+                        shallow_water_celerity
+                    ));
+                    Self::info_button(ui, "Wave propagation speed in shallow water. Formula: c = √(gh) where g is gravitational acceleration (9.81 m/s²) and h is water depth. Independent of wave period in shallow water approximation.");
+                });
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "Shallow Water Wavelength (L): {:.3} m",
+                        shallow_water_wavelength
+                    ));
+                    Self::info_button(ui, "Distance between successive wave crests. Formula: L = cT = T√(gh) where c is celerity, T is period, g is gravity, and h is depth. Determines spatial scale of wave patterns and grid requirements.");
+                });
 
                 ui.separator();
 
