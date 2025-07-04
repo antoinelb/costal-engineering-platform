@@ -6,6 +6,9 @@ pub struct WaveChannelApp {
     pub grid_resolution: usize,
     pub still_water_level: f64,
     pub surface_elevation: Vec<f64>, // Water surface elevation (for future wave animation)
+    pub wave_height: f64,            // Wave height (H)
+    pub wave_period: f64,            // Wave period (T)
+    pub number_of_waves: usize,      // Number of waves to generate
 }
 
 impl Default for WaveChannelApp {
@@ -22,6 +25,9 @@ impl WaveChannelApp {
             grid_resolution,                               // Default 100 grid points
             still_water_level: 2.0,                        // Default 2m water depth
             surface_elevation: vec![0.0; grid_resolution], // Initialize with still water
+            wave_height: 0.5,                              // Default 0.5m wave height
+            wave_period: 4.0,                              // Default 4s wave period
+            number_of_waves: 50,                           // Default 50 waves
         }
     }
 
@@ -77,7 +83,7 @@ impl WaveChannelApp {
         ui.horizontal(|ui| {
             ui.label("Channel Length:");
             ui.add(
-                egui::Slider::new(&mut self.channel_length, 1.0..=100.0)
+                egui::Slider::new(&mut self.channel_length, 1.0..=200.0)
                     .suffix(" m")
                     .step_by(0.1),
             );
@@ -86,14 +92,14 @@ impl WaveChannelApp {
         // Grid resolution control
         ui.horizontal(|ui| {
             ui.label("Grid Resolution:");
-            ui.add(egui::Slider::new(&mut self.grid_resolution, 10..=1000).suffix(" points"));
+            ui.add(egui::Slider::new(&mut self.grid_resolution, 10..=2000).suffix(" points"));
         });
 
         // Still water level control
         ui.horizontal(|ui| {
             ui.label("Still Water Level:");
             ui.add(
-                egui::Slider::new(&mut self.still_water_level, 0.1..=10.0)
+                egui::Slider::new(&mut self.still_water_level, 0.1..=5.0)
                     .suffix(" m")
                     .step_by(0.01),
             );
@@ -106,9 +112,62 @@ impl WaveChannelApp {
 
         ui.separator();
 
+        // Wave parameters section
+        ui.heading("Wave Parameters");
+
+        // Wave height control
+        ui.horizontal(|ui| {
+            ui.label("Wave Height (H):");
+            ui.add(
+                egui::Slider::new(&mut self.wave_height, 0.01..=5.0)
+                    .suffix(" m")
+                    .step_by(0.01),
+            );
+        });
+
+        // Wave period control
+        ui.horizontal(|ui| {
+            ui.label("Wave Period (T):");
+            ui.add(
+                egui::Slider::new(&mut self.wave_period, 0.1..=20.0)
+                    .suffix(" s")
+                    .step_by(0.1),
+            );
+        });
+
+        // Number of waves control
+        ui.horizontal(|ui| {
+            ui.label("Number of Waves:");
+            ui.add(egui::Slider::new(&mut self.number_of_waves, 1..=1000).suffix(" waves"));
+        });
+
+        ui.separator();
+
         // Computed values section
         ui.heading("Computed Values");
+
+        // Grid spacing
         ui.label(format!("Grid Spacing (Δx): {:.3} m", self.grid_spacing()));
+
+        // Wave properties
+        let wave_frequency = 1.0 / self.wave_period;
+        let angular_frequency = 2.0 * std::f64::consts::PI * wave_frequency;
+        let shallow_water_celerity = (9.81 * self.still_water_level).sqrt(); // c = √(gh)
+        let shallow_water_wavelength = shallow_water_celerity * self.wave_period;
+
+        ui.label(format!("Wave Frequency (f): {:.3} Hz", wave_frequency));
+        ui.label(format!(
+            "Angular Frequency (ω): {:.3} rad/s",
+            angular_frequency
+        ));
+        ui.label(format!(
+            "Shallow Water Celerity (c): {:.3} m/s",
+            shallow_water_celerity
+        ));
+        ui.label(format!(
+            "Shallow Water Wavelength (L): {:.3} m",
+            shallow_water_wavelength
+        ));
 
         ui.separator();
 
