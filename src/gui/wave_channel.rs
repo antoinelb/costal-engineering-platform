@@ -1,6 +1,13 @@
 use eframe::egui;
 use egui_plot::{Line, Plot, PlotPoints};
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum WaterDepthRegime {
+    Shallow,
+    Intermediate,
+    Deep,
+}
+
 pub struct WaveChannelApp {
     pub channel_length: f64,
     pub grid_resolution: usize,
@@ -47,6 +54,60 @@ impl WaveChannelApp {
         if ui.small_button("?").on_hover_text(tooltip_text).clicked() {
             // Button click handled by hover tooltip
         }
+    }
+
+    fn classify_water_depth(h: f64, wavelength: f64) -> WaterDepthRegime {
+        let ratio = h / wavelength;
+        if ratio < 1.0 / 20.0 {
+            WaterDepthRegime::Shallow
+        } else if ratio > 0.5 {
+            WaterDepthRegime::Deep
+        } else {
+            WaterDepthRegime::Intermediate
+        }
+    }
+
+    fn calculate_wavelength_adaptive(period: f64, depth: f64, gravity: f64) -> f64 {
+        // Start with shallow water approximation
+        let wavelength = period * (gravity * depth).sqrt();
+        
+        // Check regime and refine calculation
+        let regime = Self::classify_water_depth(depth, wavelength);
+        
+        match regime {
+            WaterDepthRegime::Shallow => {
+                // Already calculated correctly
+                wavelength
+            }
+            WaterDepthRegime::Deep => {
+                // Deep water formula: L = gT²/(2π)
+                gravity * period * period / (2.0 * std::f64::consts::PI)
+            }
+            WaterDepthRegime::Intermediate => {
+                // Iterative solution of dispersion relation
+                // L = (gT²/(2π)) * tanh(2πh/L)
+                let mut l_new = gravity * period * period / (2.0 * std::f64::consts::PI); // Deep water guess
+                
+                for _ in 0..20 { // Max 20 iterations
+                    let l_old = l_new;
+                    let k = 2.0 * std::f64::consts::PI / l_old;
+                    let tanh_kh = (k * depth).tanh();
+                    l_new = (gravity * period * period / (2.0 * std::f64::consts::PI)) * tanh_kh;
+                    
+                    // Check convergence
+                    if (l_new - l_old).abs() < 1e-6 {
+                        break;
+                    }
+                }
+                
+                l_new
+            }
+        }
+    }
+
+    fn calculate_celerity_adaptive(period: f64, depth: f64, gravity: f64) -> f64 {
+        let wavelength = Self::calculate_wavelength_adaptive(period, depth, gravity);
+        wavelength / period
     }
 
     fn generate_plot_data(&self) -> (PlotPoints, PlotPoints, PlotPoints) {
@@ -175,8 +236,10 @@ impl WaveChannelApp {
                 // Wave properties
                 let wave_frequency = 1.0 / self.wave_period;
                 let angular_frequency = 2.0 * std::f64::consts::PI * wave_frequency;
-                let shallow_water_celerity = (9.81 * self.still_water_level).sqrt(); // c = √(gh)
-                let shallow_water_wavelength = shallow_water_celerity * self.wave_period;
+                let gravity = 9.81;
+                let wavelength = Self::calculate_wavelength_adaptive(self.wave_period, self.still_water_level, gravity);
+                let celerity = Self::calculate_celerity_adaptive(self.wave_period, self.still_water_level, gravity);
+                let water_regime = Self::classify_water_depth(self.still_water_level, wavelength);
 
                 ui.horizontal(|ui| {
                     ui.label(format!("Wave Frequency (f): {:.3} Hz", wave_frequency));
@@ -189,19 +252,40 @@ impl WaveChannelApp {
                     ));
                     Self::info_button(ui, "Angular frequency in radians per second. Formula: ω = 2πf = 2π/T. Used in wave equations and dispersion relations. Relates linear frequency to circular motion representation.");
                 });
+                // Water depth regime classification
+                ui.horizontal(|ui| {
+                    let regime_text = match water_regime {
+                        WaterDepthRegime::Shallow => "Shallow Water",
+                        WaterDepthRegime::Intermediate => "Intermediate Water", 
+                        WaterDepthRegime::Deep => "Deep Water",
+                    };
+                    ui.label(format!("Water Depth Regime: {}", regime_text));
+                    Self::info_button(ui, "Classification based on h/L ratio. Shallow: h/L < 1/20 (non-dispersive), Deep: h/L > 1/2 (fully dispersive), Intermediate: 1/20 ≤ h/L ≤ 1/2 (transitional). Determines which wave theory applies.");
+                });
+
                 ui.horizontal(|ui| {
                     ui.label(format!(
-                        "Shallow Water Celerity (c): {:.3} m/s",
-                        shallow_water_celerity
+                        "Wave Celerity (c): {:.3} m/s",
+                        celerity
                     ));
-                    Self::info_button(ui, "Wave propagation speed in shallow water. Formula: c = √(gh) where g is gravitational acceleration (9.81 m/s²) and h is water depth. Independent of wave period in shallow water approximation.");
+                    let celerity_tooltip = match water_regime {
+                        WaterDepthRegime::Shallow => "Shallow water celerity: c = √(gh). Independent of wave period.",
+                        WaterDepthRegime::Deep => "Deep water celerity: c = gT/(2π). Proportional to wave period (dispersive).",
+                        WaterDepthRegime::Intermediate => "Intermediate water celerity: c = L/T using full dispersion relation. Transitional between shallow and deep water behavior.",
+                    };
+                    Self::info_button(ui, celerity_tooltip);
                 });
                 ui.horizontal(|ui| {
                     ui.label(format!(
-                        "Shallow Water Wavelength (L): {:.3} m",
-                        shallow_water_wavelength
+                        "Wavelength (L): {:.3} m",
+                        wavelength
                     ));
-                    Self::info_button(ui, "Distance between successive wave crests. Formula: L = cT = T√(gh) where c is celerity, T is period, g is gravity, and h is depth. Determines spatial scale of wave patterns and grid requirements.");
+                    let wavelength_tooltip = match water_regime {
+                        WaterDepthRegime::Shallow => "Shallow water wavelength: L = T√(gh). Independent of wave height, depends only on period and depth.",
+                        WaterDepthRegime::Deep => "Deep water wavelength: L = gT²/(2π). Depends only on period, independent of depth.",
+                        WaterDepthRegime::Intermediate => "Intermediate water wavelength from full dispersion relation: ω² = gk·tanh(kh). Solved iteratively for accurate results.",
+                    };
+                    Self::info_button(ui, wavelength_tooltip);
                 });
 
                 ui.separator();
