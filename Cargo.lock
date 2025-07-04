@@ -614,6 +614,7 @@ dependencies = [
  "eframe",
  "egui",
  "egui_kittest",
+ "egui_plot",
 ]
 
 [[package]]
@@ -930,6 +931,17 @@ checksum = "c46def610cf9486675aeec698d4e36a949ec0b0e1f6096135b0584dcfd52aa47"
 dependencies = [
  "egui",
  "kittest",
+]
+
+[[package]]
+name = "egui_plot"
+version = "0.31.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1794c66fb727dac28dffed2e4b548e5118d1cccc331d368a35411d68725dde71"
+dependencies = [
+ "ahash",
+ "egui",
+ "emath",
 ]
 
 [[package]]
