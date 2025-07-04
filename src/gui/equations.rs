@@ -211,6 +211,55 @@ impl EquationRenderer {
         
         response
     }
+
+    /// Create an equation tooltip with integrated text and SVG equation
+    pub fn integrated_equation_tooltip(&mut self, ctx: &Context, ui: &mut Ui, equation_id: &str, text_parts: (&str, &str)) -> Response {
+        ui.add_space(5.0);
+        let button_response = ui.small_button("?");
+        
+        let response = button_response.on_hover_ui(|ui| {
+            ui.set_max_width(450.0);
+            
+            // Show text before equation
+            if !text_parts.0.is_empty() {
+                ui.label(text_parts.0);
+            }
+            
+            // Show the equation inline with text
+            if let Err(e) = self.load_equation_texture(ctx, equation_id) {
+                eprintln!("Failed to load equation texture for {}: {}", equation_id, e);
+                ui.label(format!("[Equation {} failed to load]", equation_id));
+            } else if let Some(texture) = self.textures.get(equation_id) {
+                let size = texture.size_vec2();
+                
+                // Scale equation to match current font size
+                let font_size = ui.text_style_height(&egui::TextStyle::Body);
+                let base_equation_height = 12.0; // Base height from LaTeX template (12pt)
+                let font_scale = font_size / base_equation_height;
+                
+                // Apply font scaling with additional reduction factor for better text matching
+                let font_scaled_size = size * font_scale * 0.15;
+                let max_width = ui.available_width().min(400.0);
+                let width_scale = if font_scaled_size.x > max_width {
+                    max_width / font_scaled_size.x
+                } else {
+                    1.0
+                };
+                let display_size = font_scaled_size * width_scale;
+                
+                ui.add_space(5.0);
+                ui.image((texture.id(), display_size));
+                ui.add_space(5.0);
+            }
+            
+            // Show text after equation
+            if !text_parts.1.is_empty() {
+                ui.label(text_parts.1);
+            }
+        });
+        
+        response
+    }
 }
 
 impl Default for EquationRenderer {
