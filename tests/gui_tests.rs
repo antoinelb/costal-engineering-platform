@@ -1,14 +1,17 @@
+// Legacy GUI tests - moved to organized structure
+// See tests/unit/ and tests/integration/ for current tests
+
 use coastal_engineering_platform::gui::WaveChannelApp;
 use egui_kittest::{Harness, kittest::Queryable};
 
 #[test]
-fn test_wave_channel_app_creation() {
+fn test_wave_channel_app_creation_legacy() {
     let _wave_app = WaveChannelApp::new();
     // Test that the WaveChannelApp can be created without panicking
 }
 
 #[test]
-fn test_wave_channel_app_ui_components() {
+fn test_wave_channel_app_ui_components_legacy() {
     let mut wave_app = WaveChannelApp::new();
     
     let mut harness = Harness::new_ui(move |ui| {
@@ -22,7 +25,7 @@ fn test_wave_channel_app_ui_components() {
 }
 
 #[test]
-fn test_wave_channel_app_basic_ui() {
+fn test_wave_channel_app_parameter_ui() {
     let mut wave_app = WaveChannelApp::new();
     
     let mut harness = Harness::new_ui(move |ui| {
@@ -31,6 +34,7 @@ fn test_wave_channel_app_basic_ui() {
 
     harness.run();
     
-    // Test that the coming soon text is displayed
-    let _coming_soon = harness.get_by_label("Wave simulation module - coming soon");
+    // Test that parameter controls are present
+    let _channel_params = harness.get_by_label("Channel Parameters");
+    let _computed_values = harness.get_by_label("Computed Values");
 }

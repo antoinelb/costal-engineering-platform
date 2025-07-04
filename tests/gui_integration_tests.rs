@@ -1,8 +1,11 @@
+// Legacy integration tests - moved to organized structure  
+// See tests/integration/ for current integration tests
+
 use coastal_engineering_platform::gui::WaveChannelApp;
 use egui_kittest::{Harness, kittest::Queryable};
 
 #[test]
-fn test_platform_app_integration() {
+fn test_platform_app_integration_legacy() {
     let mut wave_app = WaveChannelApp::new();
     
     let mut harness = Harness::new_ui(move |ui| {

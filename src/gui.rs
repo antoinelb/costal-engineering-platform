@@ -1,5 +1,8 @@
 use eframe::egui;
 
+mod wave_channel;
+pub use wave_channel::WaveChannelApp;
+
 pub struct PlatformApp {
     wave_channel_app: WaveChannelApp,
 }
@@ -23,16 +26,3 @@ impl eframe::App for PlatformApp {
     }
 }
 
-pub struct WaveChannelApp {
-}
-
-impl WaveChannelApp {
-    pub fn new() -> Self {
-        Self {}
-    }
-    
-    pub fn show(&mut self, ui: &mut egui::Ui) {
-        ui.heading("1D Wave Channel Simulator");
-        ui.label("Wave simulation module - coming soon");
-    }
-}

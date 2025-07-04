@@ -27,5 +27,5 @@ cargo clean
 cargo nextest run
 
 # Run tests with coverage reporting
-cargo llvm-cov nextest
+cargo llvm-cov nextest --no-cfg-coverage
 ```
