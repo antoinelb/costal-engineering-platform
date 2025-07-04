@@ -34,3 +34,4 @@ This is a basic Rust project with:
 ## Claude Code Guidelines
 
 - Always refer to @plan.md before doing anything
+- Always use context7 when unsure about the api
