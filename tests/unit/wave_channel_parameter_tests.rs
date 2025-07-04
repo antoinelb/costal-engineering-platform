@@ -1,4 +1,4 @@
-use coastal_engineering_platform::gui::WaveChannelApp;
+use coastal_engineering_platform::gui::{WaveChannelApp, EquationRenderer};
 use egui_kittest::{Harness, kittest::Queryable};
 
 #[test]
@@ -7,7 +7,9 @@ fn test_wave_channel_app_default_parameters() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -27,7 +29,9 @@ fn test_wave_channel_app_ui_responsiveness() {
 
     for _ in 0..5 {
         let mut harness = Harness::new_ui(|ui| {
-            wave_app.show(ui);
+            let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
         });
 
         harness.run();
@@ -44,7 +48,9 @@ fn test_wave_channel_app_ui_components_consistency() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -73,14 +79,18 @@ fn test_wave_channel_app_multiple_instances() {
 
     // Test first instance
     let mut harness1 = Harness::new_ui(|ui| {
-        wave_app1.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app1.show(ui, &ctx, &mut equation_renderer);
     });
     harness1.run();
     let _heading1 = harness1.get_by_label("1D Wave Channel Simulator");
 
     // Test second instance
     let mut harness2 = Harness::new_ui(|ui| {
-        wave_app2.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app2.show(ui, &ctx, &mut equation_renderer);
     });
     harness2.run();
     let _heading2 = harness2.get_by_label("1D Wave Channel Simulator");
@@ -95,7 +105,9 @@ fn test_wave_channel_app_ui_structure() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();

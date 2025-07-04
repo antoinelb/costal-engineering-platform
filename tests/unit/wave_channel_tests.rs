@@ -1,4 +1,4 @@
-use coastal_engineering_platform::gui::WaveChannelApp;
+use coastal_engineering_platform::gui::{WaveChannelApp, EquationRenderer};
 
 #[test]
 fn test_wave_channel_app_creation() {

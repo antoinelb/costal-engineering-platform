@@ -1,6 +1,7 @@
 use eframe::egui;
 use egui_plot::{Line, Plot, PlotPoints};
 use super::equations::EquationRenderer;
+use std::collections::HashSet;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WaterDepthRegime {
@@ -17,6 +18,7 @@ pub struct WaveChannelApp {
     pub wave_height: f64,            // Wave height (H)
     pub wave_period: f64,            // Wave period (T)
     pub number_of_waves: usize,      // Number of waves to generate
+    pub open_tooltips: HashSet<String>, // Track which tooltips are currently open
 }
 
 impl Default for WaveChannelApp {
@@ -36,6 +38,7 @@ impl WaveChannelApp {
             wave_height: 0.5,                              // Default 0.5m wave height
             wave_period: 4.0,                              // Default 4s wave period
             number_of_waves: 50,                           // Default 50 waves
+            open_tooltips: HashSet::new(),                 // Initialize empty tooltip set
         }
     }
 
@@ -50,15 +53,131 @@ impl WaveChannelApp {
         }
     }
 
-    fn info_button(ui: &mut egui::Ui, tooltip_text: &str) {
-        ui.add_space(5.0);
-        if ui.small_button("?").on_hover_text(tooltip_text).clicked() {
-            // Button click handled by hover tooltip
+    fn is_tooltip_open(&self, tooltip_id: &str) -> bool {
+        self.open_tooltips.contains(tooltip_id)
+    }
+
+    fn toggle_tooltip(&mut self, tooltip_id: &str) {
+        if self.open_tooltips.contains(tooltip_id) {
+            self.open_tooltips.remove(tooltip_id);
+        } else {
+            self.open_tooltips.insert(tooltip_id.to_string());
         }
     }
 
-    fn equation_info_button(ui: &mut egui::Ui, ctx: &egui::Context, equation_renderer: &mut EquationRenderer, equation_id: &str, text_parts: (&str, &str)) {
-        equation_renderer.integrated_equation_tooltip(ctx, ui, equation_id, text_parts);
+    fn close_tooltip(&mut self, tooltip_id: &str) {
+        self.open_tooltips.remove(tooltip_id);
+    }
+
+    fn info_button(&mut self, ui: &mut egui::Ui, tooltip_id: &str, tooltip_text: &str) {
+        ui.add_space(5.0);
+        let button_response = ui.small_button("?");
+        
+        if button_response.clicked() {
+            self.toggle_tooltip(tooltip_id);
+        }
+        
+        if self.is_tooltip_open(tooltip_id) {
+            let popup_id = egui::Id::new(format!("tooltip_{}", tooltip_id));
+            let area_response = egui::Area::new(popup_id)
+                .fixed_pos(button_response.rect.right_top() + egui::vec2(5.0, 0.0))
+                .show(ui.ctx(), |ui| {
+                    egui::Frame::popup(ui.style())
+                        .inner_margin(egui::Margin::same(8))
+                        .show(ui, |ui| {
+                            ui.set_max_width(300.0);
+                            ui.vertical(|ui| {
+                                ui.horizontal(|ui| {
+                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+                                        if ui.small_button("✖").clicked() {
+                                            self.close_tooltip(tooltip_id);
+                                        }
+                                    });
+                                });
+                                ui.label(tooltip_text);
+                            });
+                        });
+                });
+            
+            // Check for click outside to close tooltip
+            if ui.input(|i| i.pointer.any_click()) && !area_response.response.hovered() && !button_response.hovered() {
+                self.close_tooltip(tooltip_id);
+            }
+        }
+    }
+
+    fn equation_info_button(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, equation_renderer: &mut EquationRenderer, tooltip_id: &str, equation_id: &str, text_parts: (&str, &str)) {
+        ui.add_space(5.0);
+        let button_response = ui.small_button("?");
+        
+        if button_response.clicked() {
+            self.toggle_tooltip(tooltip_id);
+        }
+        
+        if self.is_tooltip_open(tooltip_id) {
+            let popup_id = egui::Id::new(format!("tooltip_{}", tooltip_id));
+            let area_response = egui::Area::new(popup_id)
+                .fixed_pos(button_response.rect.right_top() + egui::vec2(5.0, 0.0))
+                .show(ui.ctx(), |ui| {
+                    egui::Frame::popup(ui.style())
+                        .inner_margin(egui::Margin::same(8))
+                        .show(ui, |ui| {
+                            ui.set_max_width(450.0);
+                            ui.vertical(|ui| {
+                                // Close button at the top right
+                                ui.horizontal(|ui| {
+                                    ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+                                        if ui.small_button("✖").clicked() {
+                                            self.close_tooltip(tooltip_id);
+                                        }
+                                    });
+                                });
+                                
+                                // Show text before equation
+                                if !text_parts.0.is_empty() {
+                                    ui.label(text_parts.0);
+                                }
+                                
+                                // Show the equation inline with text
+                                if let Err(e) = equation_renderer.load_equation_texture(ctx, equation_id) {
+                                    eprintln!("Failed to load equation texture for {}: {}", equation_id, e);
+                                    ui.label(format!("[Equation {} failed to load]", equation_id));
+                                } else if let Some(texture) = equation_renderer.get_texture(equation_id) {
+                                    let size = texture.size_vec2();
+                                    
+                                    // Scale equation to match current font size
+                                    let font_size = ui.text_style_height(&egui::TextStyle::Body);
+                                    let base_equation_height = 12.0; // Base height from LaTeX template (12pt)
+                                    let font_scale = font_size / base_equation_height;
+                                    
+                                    // Apply font scaling with additional reduction factor for better text matching
+                                    let font_scaled_size = size * font_scale * 0.15;
+                                    let max_width = ui.available_width().min(400.0);
+                                    let width_scale = if font_scaled_size.x > max_width {
+                                        max_width / font_scaled_size.x
+                                    } else {
+                                        1.0
+                                    };
+                                    let display_size = font_scaled_size * width_scale;
+                                    
+                                    ui.add_space(5.0);
+                                    ui.image((texture.id(), display_size));
+                                    ui.add_space(5.0);
+                                }
+                                
+                                // Show text after equation
+                                if !text_parts.1.is_empty() {
+                                    ui.label(text_parts.1);
+                                }
+                            });
+                        });
+                });
+            
+            // Check for click outside to close tooltip
+            if ui.input(|i| i.pointer.any_click()) && !area_response.response.hovered() && !button_response.hovered() {
+                self.close_tooltip(tooltip_id);
+            }
+        }
     }
 
     fn classify_water_depth(h: f64, wavelength: f64) -> WaterDepthRegime {
@@ -160,7 +279,7 @@ impl WaveChannelApp {
                 // Channel length control
                 ui.horizontal(|ui| {
                     ui.label("Channel Length:");
-                    Self::info_button(ui, "The total length of the wave channel domain. Longer channels allow waves to develop fully and reduce boundary effects. Typical values: 50-200m for coastal studies.");
+                    self.info_button(ui, "channel_length", "The total length of the wave channel domain. Longer channels allow waves to develop fully and reduce boundary effects. Typical values: 50-200m for coastal studies.");
                     ui.add(
                         egui::Slider::new(&mut self.channel_length, 1.0..=200.0)
                             .suffix(" m")
@@ -171,7 +290,7 @@ impl WaveChannelApp {
                 // Grid resolution control
                 ui.horizontal(|ui| {
                     ui.label("Grid Resolution:");
-                    Self::info_button(ui, "Number of computational grid points along the channel. Higher resolution gives better accuracy but increases computation time. Rule of thumb: 20-50 points per wavelength for good accuracy.");
+                    self.info_button(ui, "grid_resolution", "Number of computational grid points along the channel. Higher resolution gives better accuracy but increases computation time. Rule of thumb: 20-50 points per wavelength for good accuracy.");
                     ui.add(
                         egui::Slider::new(&mut self.grid_resolution, 10..=2000).suffix(" points"),
                     );
@@ -180,7 +299,7 @@ impl WaveChannelApp {
                 // Still water level control
                 ui.horizontal(|ui| {
                     ui.label("Still Water Level:");
-                    Self::info_button(ui, "Mean water depth (h) in the channel. Controls wave speed and breaking characteristics. Shallow water: h < L/20, Deep water: h > L/2, where L is wavelength. Typical coastal depths: 0.5-5m.");
+                    self.info_button(ui, "still_water_level", "Mean water depth (h) in the channel. Controls wave speed and breaking characteristics. Shallow water: h < L/20, Deep water: h > L/2, where L is wavelength. Typical coastal depths: 0.5-5m.");
                     ui.add(
                         egui::Slider::new(&mut self.still_water_level, 0.1..=5.0)
                             .suffix(" m")
@@ -201,7 +320,7 @@ impl WaveChannelApp {
                 // Wave height control
                 ui.horizontal(|ui| {
                     ui.label("Wave Height (H):");
-                    Self::info_button(ui, "Vertical distance from wave trough to wave crest. Determines wave energy (E ∝ H²). For linear waves, amplitude a = H/2. Breaking occurs when H/h ≈ 0.78 (depth-limited breaking).");
+                    self.info_button(ui, "wave_height", "Vertical distance from wave trough to wave crest. Determines wave energy (E ∝ H²). For linear waves, amplitude a = H/2. Breaking occurs when H/h ≈ 0.78 (depth-limited breaking).");
                     ui.add(
                         egui::Slider::new(&mut self.wave_height, 0.01..=5.0)
                             .suffix(" m")
@@ -212,7 +331,7 @@ impl WaveChannelApp {
                 // Wave period control
                 ui.horizontal(|ui| {
                     ui.label("Wave Period (T):");
-                    Self::info_button(ui, "Time interval between successive wave crests passing a fixed point. Related to frequency by f = 1/T. Determines wavelength through dispersion relation. Typical ocean waves: T = 4-20s, wind waves: T = 1-8s.");
+                    self.info_button(ui, "wave_period", "Time interval between successive wave crests passing a fixed point. Related to frequency by f = 1/T. Determines wavelength through dispersion relation. Typical ocean waves: T = 4-20s, wind waves: T = 1-8s.");
                     ui.add(
                         egui::Slider::new(&mut self.wave_period, 0.1..=20.0)
                             .suffix(" s")
@@ -223,7 +342,7 @@ impl WaveChannelApp {
                 // Number of waves control
                 ui.horizontal(|ui| {
                     ui.label("Number of Waves:");
-                    Self::info_button(ui, "Total number of wave cycles to simulate. Determines simulation duration: t_sim = N × T. More waves show steady-state behavior and wave interactions. Typical studies use 10-50 waves for analysis.");
+                    self.info_button(ui, "number_of_waves", "Total number of wave cycles to simulate. Determines simulation duration: t_sim = N × T. More waves show steady-state behavior and wave interactions. Typical studies use 10-50 waves for analysis.");
                     ui.add(egui::Slider::new(&mut self.number_of_waves, 1..=1000).suffix(" waves"));
                 });
 
@@ -235,7 +354,7 @@ impl WaveChannelApp {
                 // Grid spacing
                 ui.horizontal(|ui| {
                     ui.label(format!("Grid Spacing (Δx): {:.3} m", self.grid_spacing()));
-                    Self::info_button(ui, "Distance between computational grid points. Formula: Δx = L/(N-1) where L is channel length and N is grid resolution. Smaller spacing improves accuracy but increases computational cost.");
+                    self.info_button(ui, "grid_spacing", "Distance between computational grid points. Formula: Δx = L/(N-1) where L is channel length and N is grid resolution. Smaller spacing improves accuracy but increases computational cost.");
                 });
 
                 // Wave properties
@@ -248,7 +367,7 @@ impl WaveChannelApp {
 
                 ui.horizontal(|ui| {
                     ui.label(format!("Wave Frequency (f): {:.3} Hz", wave_frequency));
-                    Self::equation_info_button(ui, ctx, equation_renderer, "wave_frequency", (
+                    self.equation_info_button(ui, ctx, equation_renderer, "wave_frequency_tooltip", "wave_frequency", (
                         "Number of wave cycles per second:", 
                         "where T is wave period. Fundamental parameter in wave kinematics and energy calculations. Units: Hertz (Hz) or cycles per second."
                     ));
@@ -258,7 +377,7 @@ impl WaveChannelApp {
                         "Angular Frequency (ω): {:.3} rad/s",
                         angular_frequency
                     ));
-                    Self::equation_info_button(ui, ctx, equation_renderer, "angular_frequency", (
+                    self.equation_info_button(ui, ctx, equation_renderer, "angular_frequency_tooltip", "angular_frequency", (
                         "Angular frequency in radians per second:",
                         "Used in wave equations and dispersion relations. Relates linear frequency to circular motion representation."
                     ));
@@ -271,7 +390,7 @@ impl WaveChannelApp {
                         WaterDepthRegime::Deep => "Deep Water",
                     };
                     ui.label(format!("Water Depth Regime: {}", regime_text));
-                    Self::info_button(ui, "Classification based on h/L ratio. Shallow: h/L < 1/20 (non-dispersive), Deep: h/L > 1/2 (fully dispersive), Intermediate: 1/20 ≤ h/L ≤ 1/2 (transitional). Determines which wave theory applies.");
+                    self.info_button(ui, "water_depth_regime", "Classification based on h/L ratio. Shallow: h/L < 1/20 (non-dispersive), Deep: h/L > 1/2 (fully dispersive), Intermediate: 1/20 ≤ h/L ≤ 1/2 (transitional). Determines which wave theory applies.");
                 });
 
                 ui.horizontal(|ui| {
@@ -284,7 +403,7 @@ impl WaveChannelApp {
                         WaterDepthRegime::Deep => ("deep_water_celerity", "Deep water celerity:", "Proportional to wave period (dispersive). Applies when h/L > 1/2."),
                         WaterDepthRegime::Intermediate => ("dispersion_relation", "Intermediate water celerity from full dispersion relation:", "Solved iteratively. Transitional between shallow and deep water behavior when 1/20 < h/L < 1/2."),
                     };
-                    Self::equation_info_button(ui, ctx, equation_renderer, equation_id, (text_before, text_after));
+                    self.equation_info_button(ui, ctx, equation_renderer, "wave_celerity_tooltip", equation_id, (text_before, text_after));
                 });
                 ui.horizontal(|ui| {
                     ui.label(format!(
@@ -296,7 +415,7 @@ impl WaveChannelApp {
                         WaterDepthRegime::Deep => ("deep_water_wavelength", "Deep water wavelength:", "Depends only on period, independent of depth."),
                         WaterDepthRegime::Intermediate => ("dispersion_relation", "Intermediate water wavelength from full dispersion relation:", "Solved iteratively for accurate results."),
                     };
-                    Self::equation_info_button(ui, ctx, equation_renderer, equation_id, (text_before, text_after));
+                    self.equation_info_button(ui, ctx, equation_renderer, "wavelength_tooltip", equation_id, (text_before, text_after));
                 });
 
                 ui.separator();

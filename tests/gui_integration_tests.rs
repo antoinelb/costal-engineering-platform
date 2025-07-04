@@ -1,7 +1,7 @@
 // Legacy integration tests - moved to organized structure
 // See tests/integration/ for current integration tests
 
-use coastal_engineering_platform::gui::WaveChannelApp;
+use coastal_engineering_platform::gui::{WaveChannelApp, EquationRenderer};
 use egui_kittest::{Harness, kittest::Queryable};
 
 #[test]
@@ -13,7 +13,9 @@ fn test_platform_app_integration_legacy() {
         ui.heading("Coastal Engineering Platform");
         ui.separator();
 
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();

@@ -1,4 +1,5 @@
 use egui_kittest::{Harness, kittest::Queryable};
+use coastal_engineering_platform::gui::EquationRenderer;
 
 #[test]
 fn test_platform_app_creation() {
@@ -18,7 +19,9 @@ fn test_platform_app_ui_integration() {
         ui.heading("Coastal Engineering Platform");
         ui.separator();
 
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -32,7 +35,7 @@ fn test_platform_app_ui_integration() {
 #[test]
 fn test_module_accessibility() {
     // Test that the module structure allows proper access to components
-    use coastal_engineering_platform::gui::WaveChannelApp;
+    use coastal_engineering_platform::gui::{WaveChannelApp, EquationRenderer};
 
     // Should be able to import the wave channel app
     let _wave_app = WaveChannelApp::new();

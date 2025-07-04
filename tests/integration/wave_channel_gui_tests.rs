@@ -1,4 +1,4 @@
-use coastal_engineering_platform::gui::WaveChannelApp;
+use coastal_engineering_platform::gui::{WaveChannelApp, EquationRenderer};
 use egui_kittest::{Harness, kittest::Queryable};
 
 #[test]
@@ -6,7 +6,9 @@ fn test_wave_channel_app_ui_creation() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -20,7 +22,9 @@ fn test_wave_channel_app_parameter_controls() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -37,7 +41,9 @@ fn test_wave_channel_app_computed_values() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -56,7 +62,9 @@ fn test_wave_channel_app_complete_ui() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();

@@ -1,4 +1,4 @@
-use coastal_engineering_platform::gui::{PlatformApp, WaveChannelApp};
+use coastal_engineering_platform::gui::{PlatformApp, WaveChannelApp, EquationRenderer};
 use eframe::egui;
 use egui_kittest::{Harness, kittest::Queryable};
 
@@ -53,7 +53,9 @@ fn test_platform_app_ui_content_through_app_trait() {
             // We can't easily call the actual update method in a harness,
             // so we replicate the structure
             let mut wave_app = WaveChannelApp::new();
-            wave_app.show(ui);
+            let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
         });
     });
 

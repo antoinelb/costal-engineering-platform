@@ -1,7 +1,7 @@
 // Legacy GUI tests - moved to organized structure
 // See tests/unit/ and tests/integration/ for current tests
 
-use coastal_engineering_platform::gui::WaveChannelApp;
+use coastal_engineering_platform::gui::{WaveChannelApp, EquationRenderer};
 use egui_kittest::{Harness, kittest::Queryable};
 
 #[test]
@@ -15,7 +15,9 @@ fn test_wave_channel_app_ui_components_legacy() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -29,7 +31,9 @@ fn test_wave_channel_app_parameter_ui() {
     let mut wave_app = WaveChannelApp::new();
 
     let mut harness = Harness::new_ui(move |ui| {
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();

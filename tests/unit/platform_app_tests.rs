@@ -1,4 +1,4 @@
-use coastal_engineering_platform::gui::WaveChannelApp;
+use coastal_engineering_platform::gui::{WaveChannelApp, EquationRenderer};
 use egui_kittest::{Harness, kittest::Queryable};
 
 // Since PlatformApp is hard to test directly due to eframe::CreationContext complexity,
@@ -16,7 +16,9 @@ fn test_platform_app_structure() {
         ui.heading("Coastal Engineering Platform");
         ui.separator();
 
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -36,7 +38,9 @@ fn test_platform_app_layout() {
         // Test the CentralPanel structure from PlatformApp
         ui.heading("Coastal Engineering Platform");
         ui.separator();
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
@@ -57,7 +61,9 @@ fn test_wave_channel_app_integration_in_platform() {
         // Replicate the exact PlatformApp structure
         ui.heading("Coastal Engineering Platform");
         ui.separator();
-        wave_app.show(ui);
+        let mut equation_renderer = EquationRenderer::new();
+        let ctx = ui.ctx().clone();
+        wave_app.show(ui, &ctx, &mut equation_renderer);
     });
 
     harness.run();
