@@ -38,3 +38,7 @@ This is a basic Rust project with:
 
 - Always refer to @plan.md before doing anything
 - Always use context7 when unsure about the api
+
+## Pull Request Guidelines
+
+- Never add a test plan to PRs
