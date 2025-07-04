@@ -18,11 +18,14 @@ impl PlatformApp {
 impl eframe::App for PlatformApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Coastal Engineering Platform");
-            ui.separator();
-            
-            self.wave_channel_app.show(ui);
+            egui::ScrollArea::vertical()
+                .auto_shrink([false; 2])
+                .show(ui, |ui| {
+                    ui.heading("Coastal Engineering Platform");
+                    ui.separator();
+
+                    self.wave_channel_app.show(ui);
+                });
         });
     }
 }
-

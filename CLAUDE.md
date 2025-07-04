@@ -15,6 +15,7 @@ This is a coastal engineering platform built in Rust for performing common coast
 - `cargo clean` - Remove build artifacts
 - `cargo llvm-cov nextest --no-cfg-coverage` - Run tests with coverage reporting
 - `cargo clippy` - Run linter
+- `cargo fmt` - Run formatter
 
 ## Architecture
 

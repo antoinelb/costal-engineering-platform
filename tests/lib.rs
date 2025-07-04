@@ -4,5 +4,5 @@
 // - unit/: Unit tests for individual components
 // - integration/: Integration tests for GUI and module interactions
 
-mod unit;
 mod integration;
+mod unit;
