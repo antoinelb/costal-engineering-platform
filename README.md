@@ -18,6 +18,12 @@ cargo check
 
 # Remove build artifacts
 cargo clean
+
+# Run linter
+cargo clippy
+
+# Run formatter
+cargo fmt
 ```
 
 ### Testing
@@ -27,5 +33,5 @@ cargo clean
 cargo nextest run
 
 # Run tests with coverage reporting
-cargo llvm-cov nextest
+cargo llvm-cov nextest --no-cfg-coverage
 ```

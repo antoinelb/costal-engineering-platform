@@ -1,0 +1,4 @@
+mod main_integration_tests;
+mod platform_app_integration_tests;
+mod platform_integration_tests;
+mod wave_channel_gui_tests;
