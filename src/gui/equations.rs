@@ -48,15 +48,6 @@ impl EquationRenderer {
         Ok(())
     }
 
-    /// Get an equation by ID
-    pub fn get_equation(&self, id: &str) -> Option<&Equation> {
-        self.equations.get(id)
-    }
-
-    /// Clear all cached textures (useful when theme changes)
-    pub fn clear_texture_cache(&mut self) {
-        self.textures.clear();
-    }
 
     /// Load an SVG equation as a texture
     pub fn load_equation_texture(&mut self, ctx: &Context, equation_id: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -130,86 +121,6 @@ impl EquationRenderer {
 
         self.textures.insert(equation_id.to_string(), texture);
         Ok(())
-    }
-
-    /// Display an equation in the UI
-    pub fn show_equation(&mut self, ctx: &Context, ui: &mut Ui, equation_id: &str) -> Response {
-        // Try to load the texture if not already loaded
-        if let Err(e) = self.load_equation_texture(ctx, equation_id) {
-            eprintln!("Failed to load equation texture for {}: {}", equation_id, e);
-            return ui.label(format!("Equation {} (failed to load)", equation_id));
-        }
-
-        // Display the equation texture
-        if let Some(texture) = self.textures.get(equation_id) {
-            let size = texture.size_vec2();
-            
-            // Scale equation to match current font size
-            let font_size = ui.text_style_height(&egui::TextStyle::Body);
-            let base_equation_height = 12.0; // Base height from LaTeX template (12pt)
-            let font_scale = font_size / base_equation_height;
-            
-            // Apply font scaling with additional reduction factor for better text matching
-            let font_scaled_size = size * font_scale * 0.15; // Further reduced to 0.15
-            let max_width = ui.available_width().min(600.0);
-            let width_scale = if font_scaled_size.x > max_width {
-                max_width / font_scaled_size.x
-            } else {
-                1.0
-            };
-            let display_size = font_scaled_size * width_scale;
-            
-            ui.image((texture.id(), display_size))
-        } else {
-            ui.label(format!("Equation {} (texture not found)", equation_id))
-        }
-    }
-
-    /// Create an equation tooltip button with SVG rendering
-    pub fn equation_tooltip_button(&mut self, ctx: &Context, ui: &mut Ui, equation_id: &str, tooltip_text: &str) -> Response {
-        ui.add_space(5.0);
-        let button_response = ui.small_button("?");
-        
-        let response = button_response.on_hover_ui(|ui| {
-            ui.set_max_width(400.0);
-            ui.label(tooltip_text);
-            ui.separator();
-            
-            // Show the equation
-            if let Err(e) = self.load_equation_texture(ctx, equation_id) {
-                eprintln!("Failed to load equation texture for {}: {}", equation_id, e);
-                ui.label(format!("Equation {} (failed to load)", equation_id));
-            } else if let Some(texture) = self.textures.get(equation_id) {
-                let size = texture.size_vec2();
-                
-                // Scale equation to match current font size
-                let font_size = ui.text_style_height(&egui::TextStyle::Body);
-                let base_equation_height = 12.0; // Base height from LaTeX template (12pt)
-                let font_scale = font_size / base_equation_height;
-                
-                // Apply font scaling with additional reduction factor for better text matching
-                let font_scaled_size = size * font_scale * 0.15; // Further reduced to 0.15
-                let max_width = ui.available_width().min(400.0);
-                let width_scale = if font_scaled_size.x > max_width {
-                    max_width / font_scaled_size.x
-                } else {
-                    1.0
-                };
-                let display_size = font_scaled_size * width_scale;
-                
-                ui.image((texture.id(), display_size));
-            } else {
-                ui.label(format!("Equation {} (texture not found)", equation_id));
-            }
-            
-            // Show equation description if available
-            if let Some(equation) = self.get_equation(equation_id) {
-                ui.add_space(5.0);
-                ui.label(format!("Description: {}", equation.description));
-            }
-        });
-        
-        response
     }
 
     /// Create an equation tooltip with integrated text and SVG equation
