@@ -30,3 +30,7 @@ This is a basic Rust project with:
 ## Writing Guidelines
 
 - Always use latex when writing mathematical symbols in markdown documents except for inside code blocks
+
+## Claude Code Guidelines
+
+- Always refer to @plan.md before doing anything
