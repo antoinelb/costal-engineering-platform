@@ -1,5 +1,6 @@
 use eframe::egui;
 use egui_plot::{Line, Plot, PlotPoints};
+use super::equations::EquationRenderer;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WaterDepthRegime {
@@ -54,6 +55,10 @@ impl WaveChannelApp {
         if ui.small_button("?").on_hover_text(tooltip_text).clicked() {
             // Button click handled by hover tooltip
         }
+    }
+
+    fn equation_info_button(ui: &mut egui::Ui, ctx: &egui::Context, equation_renderer: &mut EquationRenderer, equation_id: &str, tooltip_text: &str) {
+        equation_renderer.equation_tooltip_button(ctx, ui, equation_id, tooltip_text);
     }
 
     fn classify_water_depth(h: f64, wavelength: f64) -> WaterDepthRegime {
@@ -137,7 +142,7 @@ impl WaveChannelApp {
         (water_surface, channel_bottom, channel_walls)
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui) {
+    pub fn show(&mut self, ui: &mut egui::Ui, ctx: &egui::Context, equation_renderer: &mut EquationRenderer) {
         // Use full width available
         ui.allocate_ui_with_layout(
             [ui.available_width(), 0.0].into(),
@@ -243,14 +248,14 @@ impl WaveChannelApp {
 
                 ui.horizontal(|ui| {
                     ui.label(format!("Wave Frequency (f): {:.3} Hz", wave_frequency));
-                    Self::info_button(ui, "Number of wave cycles per second. Formula: f = 1/T where T is wave period. Fundamental parameter in wave kinematics and energy calculations. Units: Hertz (Hz) or cycles per second.");
+                    Self::equation_info_button(ui, ctx, equation_renderer, "wave_frequency", "Number of wave cycles per second. Formula: f = 1/T where T is wave period. Fundamental parameter in wave kinematics and energy calculations. Units: Hertz (Hz) or cycles per second.");
                 });
                 ui.horizontal(|ui| {
                     ui.label(format!(
                         "Angular Frequency (ω): {:.3} rad/s",
                         angular_frequency
                     ));
-                    Self::info_button(ui, "Angular frequency in radians per second. Formula: ω = 2πf = 2π/T. Used in wave equations and dispersion relations. Relates linear frequency to circular motion representation.");
+                    Self::equation_info_button(ui, ctx, equation_renderer, "angular_frequency", "Angular frequency in radians per second. Formula: ω = 2πf = 2π/T. Used in wave equations and dispersion relations. Relates linear frequency to circular motion representation.");
                 });
                 // Water depth regime classification
                 ui.horizontal(|ui| {
@@ -268,24 +273,24 @@ impl WaveChannelApp {
                         "Wave Celerity (c): {:.3} m/s",
                         celerity
                     ));
-                    let celerity_tooltip = match water_regime {
-                        WaterDepthRegime::Shallow => "Shallow water celerity: c = √(gh). Independent of wave period.",
-                        WaterDepthRegime::Deep => "Deep water celerity: c = gT/(2π). Proportional to wave period (dispersive).",
-                        WaterDepthRegime::Intermediate => "Intermediate water celerity: c = L/T using full dispersion relation. Transitional between shallow and deep water behavior.",
+                    let (equation_id, celerity_tooltip) = match water_regime {
+                        WaterDepthRegime::Shallow => ("shallow_water_celerity", "Shallow water celerity: c = √(gh). Independent of wave period."),
+                        WaterDepthRegime::Deep => ("deep_water_celerity", "Deep water celerity: c = gT/(2π). Proportional to wave period (dispersive)."),
+                        WaterDepthRegime::Intermediate => ("shallow_water_celerity", "Intermediate water celerity: c = L/T using full dispersion relation. Transitional between shallow and deep water behavior."),
                     };
-                    Self::info_button(ui, celerity_tooltip);
+                    Self::equation_info_button(ui, ctx, equation_renderer, equation_id, celerity_tooltip);
                 });
                 ui.horizontal(|ui| {
                     ui.label(format!(
                         "Wavelength (L): {:.3} m",
                         wavelength
                     ));
-                    let wavelength_tooltip = match water_regime {
-                        WaterDepthRegime::Shallow => "Shallow water wavelength: L = T√(gh). Independent of wave height, depends only on period and depth.",
-                        WaterDepthRegime::Deep => "Deep water wavelength: L = gT²/(2π). Depends only on period, independent of depth.",
-                        WaterDepthRegime::Intermediate => "Intermediate water wavelength from full dispersion relation: ω² = gk·tanh(kh). Solved iteratively for accurate results.",
+                    let (equation_id, wavelength_tooltip) = match water_regime {
+                        WaterDepthRegime::Shallow => ("shallow_water_wavelength", "Shallow water wavelength: L = T√(gh). Independent of wave height, depends only on period and depth."),
+                        WaterDepthRegime::Deep => ("deep_water_wavelength", "Deep water wavelength: L = gT²/(2π). Depends only on period, independent of depth."),
+                        WaterDepthRegime::Intermediate => ("dispersion_relation", "Intermediate water wavelength from full dispersion relation: ω² = gk·tanh(kh). Solved iteratively for accurate results."),
                     };
-                    Self::info_button(ui, wavelength_tooltip);
+                    Self::equation_info_button(ui, ctx, equation_renderer, equation_id, wavelength_tooltip);
                 });
 
                 ui.separator();

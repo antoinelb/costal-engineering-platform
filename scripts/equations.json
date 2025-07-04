@@ -1,0 +1,112 @@
+{
+  "equations": [
+    {
+      "id": "shallow_water_continuity",
+      "latex": "\\frac{\\partial h}{\\partial t} + \\frac{\\partial (hu)}{\\partial x} = 0",
+      "description": "Shallow water continuity equation",
+      "usage": "Fundamental equation for mass conservation in shallow water flows"
+    },
+    {
+      "id": "shallow_water_momentum",
+      "latex": "\\frac{\\partial (hu)}{\\partial t} + \\frac{\\partial (hu^2)}{\\partial x} + gh\\frac{\\partial h}{\\partial x} = -\\frac{\\partial p}{\\partial x}",
+      "description": "Shallow water momentum equation",
+      "usage": "Momentum conservation with pressure terms"
+    },
+    {
+      "id": "cfl_condition",
+      "latex": "\\Delta t \\leq \\frac{\\Delta x}{\\sqrt{gh_{\\max}}}",
+      "description": "CFL stability condition",
+      "usage": "Time step constraint for numerical stability"
+    },
+    {
+      "id": "wave_frequency",
+      "latex": "f = \\frac{1}{T}",
+      "description": "Wave frequency formula",
+      "usage": "Relationship between frequency and period"
+    },
+    {
+      "id": "angular_frequency",
+      "latex": "\\omega = 2\\pi f = \\frac{2\\pi}{T}",
+      "description": "Angular frequency formula",
+      "usage": "Angular frequency in terms of period"
+    },
+    {
+      "id": "shallow_water_celerity",
+      "latex": "c = \\sqrt{gh}",
+      "description": "Shallow water wave celerity",
+      "usage": "Wave speed in shallow water (h/L < 1/20)"
+    },
+    {
+      "id": "deep_water_celerity",
+      "latex": "c = \\frac{gT}{2\\pi}",
+      "description": "Deep water wave celerity",
+      "usage": "Wave speed in deep water (h/L > 1/2)"
+    },
+    {
+      "id": "shallow_water_wavelength",
+      "latex": "L = T\\sqrt{gh}",
+      "description": "Shallow water wavelength",
+      "usage": "Wavelength in shallow water regime"
+    },
+    {
+      "id": "deep_water_wavelength",
+      "latex": "L = \\frac{gT^2}{2\\pi}",
+      "description": "Deep water wavelength",
+      "usage": "Wavelength in deep water regime"
+    },
+    {
+      "id": "dispersion_relation",
+      "latex": "\\omega^2 = gk \\tanh(kh)",
+      "description": "Linear wave dispersion relation",
+      "usage": "General dispersion relation for water waves"
+    },
+    {
+      "id": "wavenumber",
+      "latex": "k = \\frac{2\\pi}{L}",
+      "description": "Wavenumber definition",
+      "usage": "Spatial frequency of waves"
+    },
+    {
+      "id": "wave_amplitude",
+      "latex": "a = \\frac{H}{2}",
+      "description": "Wave amplitude",
+      "usage": "Half the wave height"
+    },
+    {
+      "id": "wave_energy_density",
+      "latex": "E = \\frac{1}{2}\\rho g H^2",
+      "description": "Wave energy density",
+      "usage": "Energy per unit area proportional to H²"
+    },
+    {
+      "id": "depth_to_wavelength_ratio",
+      "latex": "\\frac{h}{L}",
+      "description": "Depth to wavelength ratio",
+      "usage": "Parameter for water depth regime classification"
+    },
+    {
+      "id": "breaking_criterion",
+      "latex": "\\frac{H}{h} \\approx 0.78",
+      "description": "Depth-limited wave breaking criterion",
+      "usage": "Critical wave height to depth ratio for breaking"
+    },
+    {
+      "id": "grid_spacing",
+      "latex": "\\Delta x = \\frac{L}{N-1}",
+      "description": "Grid spacing formula",
+      "usage": "Distance between computational grid points"
+    },
+    {
+      "id": "simulation_duration",
+      "latex": "t_{\\text{sim}} = N \\times T",
+      "description": "Total simulation time",
+      "usage": "Duration for N wave cycles"
+    },
+    {
+      "id": "points_per_wavelength",
+      "latex": "\\frac{L}{\\Delta x}",
+      "description": "Grid points per wavelength",
+      "usage": "Spatial resolution parameter for numerical accuracy"
+    }
+  ]
+}

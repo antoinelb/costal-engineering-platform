@@ -7,6 +7,12 @@ edition = "2024"
 egui = "0.31"
 eframe = "0.31"
 egui_plot = "0.31"
+image = "0.24"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+usvg = "0.37"
+resvg = "0.37"
+tiny-skia = "0.11"
 
 [dev-dependencies]
 egui_kittest = "0.31"
