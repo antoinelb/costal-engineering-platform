@@ -1,9 +1,9 @@
 use eframe::egui;
 
-mod wave_channel;
 mod equations;
-pub use wave_channel::WaveChannelApp;
+mod wave_channel;
 pub use equations::EquationRenderer;
+pub use wave_channel::WaveChannelApp;
 
 pub struct PlatformApp {
     wave_channel_app: WaveChannelApp,
@@ -16,7 +16,7 @@ impl PlatformApp {
         if let Err(e) = equation_renderer.load_equations() {
             eprintln!("Failed to load equations: {}", e);
         }
-        
+
         Self {
             wave_channel_app: WaveChannelApp::new(),
             equation_renderer,
@@ -33,7 +33,8 @@ impl eframe::App for PlatformApp {
                     ui.heading("Coastal Engineering Platform");
                     ui.separator();
 
-                    self.wave_channel_app.show(ui, ctx, &mut self.equation_renderer);
+                    self.wave_channel_app
+                        .show(ui, ctx, &mut self.equation_renderer);
                 });
         });
     }

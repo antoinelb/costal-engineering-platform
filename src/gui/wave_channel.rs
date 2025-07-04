@@ -3,22 +3,37 @@ use egui_plot::{Line, Plot, PlotPoints};
 use super::equations::EquationRenderer;
 use std::collections::HashSet;
 
+// Import wave generation types directly since they are in the same crate
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WaterDepthRegime {
     Shallow,
-    Intermediate,
+    Intermediate, 
     Deep,
+}
+
+impl std::fmt::Display for WaterDepthRegime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WaterDepthRegime::Shallow => write!(f, "Shallow Water"),
+            WaterDepthRegime::Intermediate => write!(f, "Intermediate Water"),
+            WaterDepthRegime::Deep => write!(f, "Deep Water"),
+        }
+    }
 }
 
 pub struct WaveChannelApp {
     pub channel_length: f64,
     pub grid_resolution: usize,
     pub still_water_level: f64,
-    pub surface_elevation: Vec<f64>, // Water surface elevation (for future wave animation)
+    pub surface_elevation: Vec<f64>, // Water surface elevation (for wave animation)
     pub wave_height: f64,            // Wave height (H)
     pub wave_period: f64,            // Wave period (T)
     pub number_of_waves: usize,      // Number of waves to generate
     pub open_tooltips: HashSet<String>, // Track which tooltips are currently open
+    
+    // Wave simulation state
+    pub simulation_time: f64,
+    pub simulation_running: bool,
 }
 
 impl Default for WaveChannelApp {
@@ -39,6 +54,10 @@ impl WaveChannelApp {
             wave_period: 4.0,                              // Default 4s wave period
             number_of_waves: 50,                           // Default 50 waves
             open_tooltips: HashSet::new(),                 // Initialize empty tooltip set
+            
+            // Wave simulation state
+            simulation_time: 0.0,
+            simulation_running: false,
         }
     }
 
@@ -51,6 +70,104 @@ impl WaveChannelApp {
         if self.surface_elevation.len() != self.grid_resolution {
             self.surface_elevation.resize(self.grid_resolution, 0.0);
         }
+        
+        // Generate waves propagating from left to right
+        if self.simulation_running || self.simulation_time > 0.0 {
+            let dx = self.grid_spacing();
+            let wavelength = Self::calculate_wavelength_adaptive(self.wave_period, self.still_water_level, 9.81);
+            let k = 2.0 * std::f64::consts::PI / wavelength;
+            let amplitude = self.wave_height / 2.0;
+            let omega = 2.0 * std::f64::consts::PI / self.wave_period;
+            let celerity = Self::calculate_celerity_adaptive(self.wave_period, self.still_water_level, 9.81);
+            
+            // Duration for generating the specified number of waves
+            let generation_duration = self.number_of_waves as f64 * self.wave_period;
+            
+            for (i, elevation) in self.surface_elevation.iter_mut().enumerate() {
+                let x = i as f64 * dx;
+                
+                // Wave generation: create waves at left boundary for the specified duration
+                // Wave propagation: waves continue to exist and propagate after generation stops
+                
+                // Time when the wave at position x would have been generated
+                let wave_generation_time = self.simulation_time - x / celerity;
+                
+                // Only show waves if:
+                // 1. The wave was generated within the generation period (wave_generation_time >= 0 and <= generation_duration)
+                // 2. The wave has had time to reach this position (self.simulation_time >= x / celerity)
+                if wave_generation_time >= 0.0 && wave_generation_time <= generation_duration && self.simulation_time >= x / celerity {
+                    let phase = k * x - omega * self.simulation_time;
+                    *elevation = amplitude * phase.cos();
+                } else {
+                    *elevation = 0.0;
+                }
+            }
+        } else {
+            // Still water when not started
+            for elevation in self.surface_elevation.iter_mut() {
+                *elevation = 0.0;
+            }
+        }
+    }
+    
+    /// Start or resume wave simulation
+    pub fn start_simulation(&mut self) {
+        self.simulation_running = true;
+    }
+    
+    /// Pause wave simulation
+    pub fn pause_simulation(&mut self) {
+        self.simulation_running = false;
+    }
+    
+    /// Reset wave simulation to initial state
+    pub fn reset_simulation(&mut self) {
+        self.simulation_running = false;
+        self.simulation_time = 0.0;
+        self.update_surface_elevation();
+    }
+    
+    /// Advance simulation by one time step
+    pub fn advance_simulation(&mut self, dt: f64) {
+        if self.simulation_running {
+            self.simulation_time += dt;
+            self.update_surface_elevation();
+            
+            // Calculate when to stop: generation time + time for last wave to cross channel
+            let generation_duration = self.number_of_waves as f64 * self.wave_period;
+            let celerity = Self::calculate_celerity_adaptive(self.wave_period, self.still_water_level, 9.81);
+            let crossing_time = self.channel_length / celerity;
+            let total_simulation_time = generation_duration + crossing_time;
+            
+            // Auto-stop when all waves have been generated and propagated across
+            if self.simulation_time >= total_simulation_time {
+                self.simulation_running = false;
+            }
+        }
+    }
+    
+    /// Get simulation progress as percentage (0.0 to 1.0)
+    pub fn simulation_progress(&self) -> f64 {
+        let generation_duration = self.number_of_waves as f64 * self.wave_period;
+        let celerity = Self::calculate_celerity_adaptive(self.wave_period, self.still_water_level, 9.81);
+        let crossing_time = self.channel_length / celerity;
+        let total_simulation_time = generation_duration + crossing_time;
+        
+        if total_simulation_time <= 0.0 {
+            return 0.0;
+        }
+        
+        (self.simulation_time / total_simulation_time).min(1.0)
+    }
+    
+    /// Check if simulation is complete
+    pub fn is_simulation_complete(&self) -> bool {
+        let generation_duration = self.number_of_waves as f64 * self.wave_period;
+        let celerity = Self::calculate_celerity_adaptive(self.wave_period, self.still_water_level, 9.81);
+        let crossing_time = self.channel_length / celerity;
+        let total_simulation_time = generation_duration + crossing_time;
+        
+        self.simulation_time >= total_simulation_time
     }
 
     fn is_tooltip_open(&self, tooltip_id: &str) -> bool {
@@ -272,6 +389,9 @@ impl WaveChannelApp {
 
                 // Store previous values to detect changes
                 let prev_grid_resolution = self.grid_resolution;
+                let prev_wave_height = self.wave_height;
+                let prev_wave_period = self.wave_period;
+                let prev_still_water_level = self.still_water_level;
 
                 // Channel parameters section
                 ui.heading("Channel Parameters");
@@ -311,6 +431,13 @@ impl WaveChannelApp {
                 if prev_grid_resolution != self.grid_resolution {
                     self.update_surface_elevation();
                 }
+                
+                // Update surface elevation if wave parameters changed
+                if prev_wave_height != self.wave_height || 
+                   prev_wave_period != self.wave_period || 
+                   prev_still_water_level != self.still_water_level {
+                    self.update_surface_elevation();
+                }
 
                 ui.separator();
 
@@ -333,7 +460,7 @@ impl WaveChannelApp {
                     ui.label("Wave Period (T):");
                     self.info_button(ui, "wave_period", "Time interval between successive wave crests passing a fixed point. Related to frequency by f = 1/T. Determines wavelength through dispersion relation. Typical ocean waves: T = 4-20s, wind waves: T = 1-8s.");
                     ui.add(
-                        egui::Slider::new(&mut self.wave_period, 0.1..=20.0)
+                        egui::Slider::new(&mut self.wave_period, 1.0..=20.0)
                             .suffix(" s")
                             .step_by(0.1),
                     );
@@ -357,7 +484,7 @@ impl WaveChannelApp {
                     self.info_button(ui, "grid_spacing", "Distance between computational grid points. Formula: Δx = L/(N-1) where L is channel length and N is grid resolution. Smaller spacing improves accuracy but increases computational cost.");
                 });
 
-                // Wave properties
+                // Wave properties using adaptive calculation
                 let wave_frequency = 1.0 / self.wave_period;
                 let angular_frequency = 2.0 * std::f64::consts::PI * wave_frequency;
                 let gravity = 9.81;
@@ -417,11 +544,53 @@ impl WaveChannelApp {
                     };
                     self.equation_info_button(ui, ctx, equation_renderer, "wavelength_tooltip", equation_id, (text_before, text_after));
                 });
+                
+                // Wave parameters for future SWASH integration
+                ui.horizontal(|ui| {
+                    ui.label(format!("Wave Number (k): {:.3} rad/m", 2.0 * std::f64::consts::PI / wavelength));
+                    self.info_button(ui, "wave_number", "Wave number k = 2π/L, fundamental parameter in wave equations. Will be computed using SWASH dispersion relation for enhanced accuracy.");
+                });
 
                 ui.separator();
 
-                // Wave channel visualization
-                ui.heading("Channel Visualization");
+                // Wave channel visualization with controls
+                ui.horizontal(|ui| {
+                    ui.heading("Channel Visualization");
+                    
+                    ui.add_space(20.0);
+                    
+                    // Simulation controls
+                    if self.simulation_running {
+                        if ui.button("⏸ Pause").clicked() {
+                            self.pause_simulation();
+                        }
+                    } else if self.is_simulation_complete() {
+                        if ui.button("🔄 Reset").clicked() {
+                            self.reset_simulation();
+                        }
+                    } else {
+                        if ui.button("▶ Play").clicked() {
+                            self.start_simulation();
+                        }
+                    }
+                    
+                    if !self.is_simulation_complete() && ui.button("⏹ Reset").clicked() {
+                        self.reset_simulation();
+                    }
+                    
+                    ui.add_space(10.0);
+                    
+                    // Time and progress
+                    let progress = self.simulation_progress();
+                    ui.label(format!("Time: {:.1}s ({:.0}%)", self.simulation_time, progress * 100.0));
+                });
+                
+                // Advance simulation if running
+                if self.simulation_running {
+                    let dt = 0.05; // 50ms time step for smooth animation
+                    self.advance_simulation(dt);
+                    ui.ctx().request_repaint(); // Continuous repainting for animation
+                }
 
                 let (water_surface, channel_bottom, _channel_walls) = self.generate_plot_data();
 
@@ -434,9 +603,9 @@ impl WaveChannelApp {
                     .width(plot_width)
                     .view_aspect(2.0)
                     .clamp_grid(true)
-                    .allow_zoom(true)
-                    .allow_drag(true)
-                    .allow_scroll(true)
+                    .allow_zoom([true, false])
+                    .allow_drag([true, false])
+                    .allow_scroll([true, false])
                     .allow_boxed_zoom(true)
                     .set_margin_fraction([0.0, 0.2].into())
                     .x_axis_label("Distance (m)")
