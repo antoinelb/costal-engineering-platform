@@ -10,9 +10,10 @@ This is a coastal engineering platform built in Rust for performing common coast
 
 - `cargo build` - Compile the project
 - `cargo run` - Run the main application
-- `cargo test` - Run tests
+- `cargo nextest run` - Run tests with nextest runner
 - `cargo check` - Check code for errors without building
 - `cargo clean` - Remove build artifacts
+- `cargo llvm-cov nextest` - Run tests with coverage reporting
 
 ## Architecture
 
