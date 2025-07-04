@@ -8,6 +8,12 @@ pub struct WaveChannelApp {
     pub surface_elevation: Vec<f64>, // Water surface elevation (for future wave animation)
 }
 
+impl Default for WaveChannelApp {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WaveChannelApp {
     pub fn new() -> Self {
         let grid_resolution = 100;

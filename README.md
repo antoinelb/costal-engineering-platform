@@ -28,4 +28,7 @@ cargo nextest run
 
 # Run tests with coverage reporting
 cargo llvm-cov nextest --no-cfg-coverage
+
+# Run linter
+cargo clippy
 ```
